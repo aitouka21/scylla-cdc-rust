@@ -31,6 +31,7 @@ pub struct CDCReaderConfig {
     pub should_save_progress: bool,
     pub checkpoint_saver: Option<Arc<dyn CDCCheckpointSaver>>,
     pub pause_between_saves: time::Duration,
+    pub case_sensitive: bool,
 }
 
 /// A wrapper for `Session` objects used to make mocking the Session possible.
@@ -101,12 +102,21 @@ impl StreamReader {
         table_name: String,
         mut consumer: Box<dyn Consumer>,
     ) -> anyhow::Result<()> {
+        let (keyspace, cdc_log_table_name) = if self.config.case_sensitive {
+            (
+                format!("\"{}\"", keyspace),
+                format!("\"{}_scylla_cdc_log\"", table_name),
+            )
+        } else {
+            (keyspace, format!("{}_scylla_cdc_log", table_name))
+        };
+
         let query = format!(
-            "SELECT * FROM {}.{}_scylla_cdc_log \
+            "SELECT * FROM {}.{} \
             WHERE \"cdc$stream_id\" in ? \
             AND \"cdc$time\" >= minTimeuuid(?) \
             AND \"cdc$time\" < minTimeuuid(?)  BYPASS CACHE",
-            keyspace, table_name
+            keyspace, cdc_log_table_name
         );
         let query_base = self.session.prepare_statement(query).await?;
         let mut window_begin = self.config.lower_timestamp;
@@ -319,6 +329,7 @@ mod tests {
                 should_save_progress: false,
                 checkpoint_saver: None,
                 pause_between_saves: Default::default(),
+                case_sensitive: false,
             };
 
             StreamReader {

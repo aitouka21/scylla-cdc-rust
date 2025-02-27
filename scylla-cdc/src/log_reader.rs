@@ -256,6 +256,7 @@ pub struct CDCLogReaderBuilder {
     should_save_progress: bool,
     checkpoint_saver: Option<Arc<dyn CDCCheckpointSaver>>,
     pause_between_saves: time::Duration,
+    case_sensitive: bool,
 }
 
 impl CDCLogReaderBuilder {
@@ -289,6 +290,7 @@ impl CDCLogReaderBuilder {
         let should_save_progress = false;
         let checkpoint_saver = None;
         let pause_between_saves = time::Duration::from_secs(DEFAULT_PAUSE);
+        let case_sensitive = false;
         CDCLogReaderBuilder {
             session,
             keyspace,
@@ -303,6 +305,7 @@ impl CDCLogReaderBuilder {
             should_save_progress,
             checkpoint_saver,
             pause_between_saves,
+            case_sensitive,
         }
     }
 
@@ -408,6 +411,12 @@ impl CDCLogReaderBuilder {
         self
     }
 
+    /// Add quoting to keyspace and table name
+    pub fn case_sensitive(mut self, value: bool) -> Self {
+        self.case_sensitive = value;
+        self
+    }
+
     /// Build the CDCLogReader after setting all the options
     /// It will fail with an error message if all the required fields are not set.
     /// Currently required fields are the following:
@@ -464,6 +473,7 @@ impl CDCLogReaderBuilder {
             should_save_progress: self.should_save_progress,
             checkpoint_saver: self.checkpoint_saver.clone(),
             pause_between_saves: self.pause_between_saves,
+            case_sensitive: self.case_sensitive,
         };
 
         let mut cdc_reader_worker = CDCReaderWorker {

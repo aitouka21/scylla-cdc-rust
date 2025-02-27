@@ -20,7 +20,7 @@ struct Args {
     table: String,
 
     /// Address of a node in source cluster
-    #[clap(short, long, action = clap::ArgAction::Set)]
+    #[clap( long, action = clap::ArgAction::Set)]
     hostname: String,
 
     /// Window size in seconds
@@ -49,6 +49,7 @@ async fn main() -> anyhow::Result<()> {
         .session(session)
         .keyspace(&args.keyspace)
         .table_name(&args.table)
+        .case_sensitive(true)
         .window_size(Duration::from_secs_f64(args.window_size))
         .safety_interval(Duration::from_secs_f64(args.safety_interval))
         .sleep_interval(Duration::from_secs_f64(args.sleep_interval))
